@@ -1,17 +1,10 @@
+"""Mmf spatil distribution in elctric machines
+by Pr. A. Kheloui
+2024"""
 import numpy as np
 import math
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-
-# Fonction pour tracer un vecteur à partir de ses coordonnées polaires
-def plot_vector(x0, y0, magnitude, angle_deg, color, label, shift_x, shift_y):
-    angle_rad = np.deg2rad(angle_deg)  # Conversion de l'angle en radians
-    x = magnitude * np.cos(angle_rad)  # Projection sur l'axe x
-    y = magnitude * np.sin(angle_rad)  # Projection sur l'axe y
-    # Tracer le vecteur (flèche)
-    plt.quiver(x0, y0, x, y, angles='xy', scale_units='xy', scale=1, color=color, label=label)
-    plt.text((x0+x+shift_x) * 1.05, (y0+y+shift_y) * 1.05, label, fontsize=10)
-    return x,y
 
 def cartesian_to_polar(x, y):
     r = math.sqrt(x**2 + y**2)  # Calcul de la distance r (norme du vecteur)
@@ -26,14 +19,6 @@ def polar_to_cartesian(magnitude, angle_rad):
 def duplicate_elements(lst, n):
     # Utiliser une compréhension de liste pour dupliquer chaque élément n fois
     return [elem for elem in lst for _ in range(n)]
-
-def sign(x):
-    if x > 0:
-        return 1
-    elif x < 0:
-        return -1
-    else:
-        return 0
 
 def create_fmm_slot(interval, magnitude, shift):
     y = np.zeros(len(interval))
@@ -59,11 +44,9 @@ alpha = 2*np.pi/m
 pitch = np.pi/p
 q = int(N_slots/(2*p*m))
 sequence = ['-a','b','-c','a','-b','c']
-current = ['-', '-', '+', '+', '+', '-']
 color = ['red','blue','green','red','blue','green']
 color_bis = ['blue','blue','red','red','red','blue']
 winding_sequence = duplicate_elements(sequence, q)
-winding_current = duplicate_elements(current, q)
 winding_color = duplicate_elements(color, q)
 winding_color_bis = duplicate_elements(color_bis, q)
 N_shift = q // 2    # quotient
@@ -86,7 +69,6 @@ fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
 fig.canvas.manager.set_window_title("Stator total mmf repartition in the airgap over time")
 
 # Configuration des limites des axes
-    
 ax1.set_xlim(-9, 9)
 ax1.set_ylim(-9, 9)
 ax1.set_aspect('equal')
@@ -107,6 +89,7 @@ ax2.set_xlabel(r"$\theta$")
 ax2.set_ylabel('Magnetomotive force')
 ax2.grid()
 
+# Tracé du stator et du rotor
 circle_stator_ext = plt.Circle((0, 0), radius_stator_ext, edgecolor='black', facecolor='lightgray')
 circle_stator_int = plt.Circle((0, 0), radius_stator_int, edgecolor='black', facecolor='white')
 circle_rotor = plt.Circle((0, 0), radius_rotor, edgecolor='black', facecolor='lightgray')
@@ -135,15 +118,12 @@ for i in range(N_slots):
     xw, yw = polar_to_cartesian(r_w0, theta_w0 + shift)
     ax1.text(xw, yw, winding_sequence[i], fontsize = 8, ha='center', va='center', color=winding_color[i], weight='bold')
 
-text = []
 current_circles = []
 for i in range(N_slots):
     if q % 2 == 0: shift = N_shift*delta + delta/2 - (i+1)*delta
     if q % 2 == 1: shift = N_shift*delta + delta - (i+1)*delta
     xc, yc = polar_to_cartesian(r_c0, theta_c0 + shift)
-    text.append(ax1.text(xc, yc, '', fontsize = 8, ha='center', va='center', color=winding_color[i], weight='bold'))
     current_circles.append(plt.Circle((xc, yc), slot_width/2, edgecolor=winding_color_bis[i], facecolor=winding_color_bis[i]))
-
 
 for circle in current_circles:
     ax1.add_patch(circle)
@@ -157,7 +137,6 @@ x, y = polar_to_cartesian(7, 2*alpha)
 ax1.quiver(0, 0, x, y, angles='xy', scale_units='xy', scale=1, color='green', label='C')
 ax1.text(x+0.4, y-0.4, 'C axis', fontsize=10)
 
-currents_sequence = ['Im', '-Im/2', '-Im/2']
 vecteur = ax1.quiver(0, 0, 0, 0, angles='uv', scale_units='xy', scale=1, color='magenta')
 vecteur_label = ax1.text(0, 0, ' ', fontsize=12, fontweight='bold', ha='right')
 ia_text = ax1.text(-1, 8.5, ' ', fontsize = 8, ha='left')
@@ -187,12 +166,6 @@ def update(frame):
     ic_text.set_text(r"$N_si_c =$" + str(round(amp_turn_c, 2)) + ' p.u')
 
     for i in range(N_slots):
-        if q % 2 == 0: shift = N_shift*delta + delta/2 - (i+1)*delta
-        if q % 2 == 1: shift = N_shift*delta + delta - (i+1)*delta
-        xc, yc = polar_to_cartesian(r_c0, theta_c0 + shift + (delta) * frame)
-        # text[i].set_position((xc, yc))
-        # text[i].set_text(winding_current[i])
-        # text[i].set_color(winding_color_bis[i])
         sequence_value = winding_sequence[i]
         if sequence_value == 'a' or sequence_value == '-a' : amp_value = amp_turn_a
         if sequence_value == 'b' or sequence_value == '-b' : amp_value = amp_turn_b
@@ -239,7 +212,7 @@ def update(frame):
     vecteur_label.set_position((x_label, y_label))
     vecteur_label.set_text(r"$\mathscr{F}_s$")
 
-    return text + [vecteur] + [vecteur_label] + [ia_text] + [ib_text] + [ic_text] + [omega_text] + [line_fmm_total] + current_circles + [line_fmm_fundamental]
+    return [vecteur] + [vecteur_label] + [ia_text] + [ib_text] + [ic_text] + [omega_text] + [line_fmm_total] + current_circles + [line_fmm_fundamental]
 
 ani = FuncAnimation(fig, update, frames=int(2*np.pi/delta), interval=1000, blit=True, repeat=True)
 
